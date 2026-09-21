@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生端 - 课堂学情监控管理系统</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="navbar" id="navbar"></div>
+<div class="container">
+    <div class="card">
+        <h3>学生端</h3>
+        <p id="welcome" style="font-size:15px; line-height:2;"></p>
+        <p style="color:#8a99a8; font-size:13px; margin-top:10px;">学情反馈、在线讨论等功能将在后续模块中加入。</p>
+    </div>
+</div>
+<div id="toast"></div>
+<script src="/js/common.js"></script>
+<script>
+    (async function () {
+        const user = await loadCurrentUser();
+        if (!user) return;
+        if (user.role !== 1) { location.href = roleHome(user.role); return; }
+        renderNavbar(user);
+        document.getElementById('welcome').innerHTML =
+            '欢迎你，<b>' + user.name + '</b>（学号：' + (user.studentNo || '-') + '，班级：' + (user.className || '-') + '）<br>' +
+            '所属专业：' + (user.major || '-') + '，年级：' + (user.grade || '-');
+    })();
+</script>
+</body>
+</html>

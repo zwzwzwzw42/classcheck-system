@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师端 - 课堂学情监控管理系统</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="navbar" id="navbar"></div>
+<div class="container">
+    <div class="card">
+        <h3>教师端</h3>
+        <p id="welcome" style="font-size:15px; line-height:2;"></p>
+        <p style="color:#8a99a8; font-size:13px; margin-top:10px;">实时学情统计、历史查询、Excel导出、在线讨论、课程班级管理等功能将在后续模块中加入。</p>
+    </div>
+</div>
+<div id="toast"></div>
+<script src="/js/common.js"></script>
+<script>
+    (async function () {
+        const user = await loadCurrentUser();
+        if (!user) return;
+        if (user.role !== 2) { location.href = roleHome(user.role); return; }
+        renderNavbar(user);
+        document.getElementById('welcome').innerHTML =
+            '欢迎你，<b>' + user.name + ' 老师</b>（联系方式：' + (user.phone || '-') + '）';
+    })();
+</script>
+</body>
+</html>
