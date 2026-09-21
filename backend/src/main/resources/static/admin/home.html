@@ -9,10 +9,30 @@
 <body>
 <div class="navbar" id="navbar"></div>
 <div class="container">
-    <div class="card">
-        <h3>管理员端</h3>
-        <p id="welcome" style="font-size:15px; line-height:2;"></p>
-        <p style="color:#8a99a8; font-size:13px; margin-top:10px;">用户账号管理、统计周期配置等功能将在后续模块中加入。</p>
+    <div class="tabs">
+        <div class="tab active" data-tab="users" onclick="switchTab('users')">用户管理</div>
+        <div class="tab" data-tab="config" onclick="switchTab('config')">系统配置</div>
+    </div>
+
+    <!-- 用户管理（占位，任务8实现） -->
+    <div class="tab-panel active" id="panel-users">
+        <div class="card"><h3>用户账号管理</h3><p style="color:#8a99a8;">学生/教师/管理员账号的增删改查功能将在后续模块实现。</p></div>
+    </div>
+
+    <!-- 系统配置 -->
+    <div class="tab-panel" id="panel-config">
+        <div class="card" style="max-width:560px;">
+            <h3>学情统计周期配置</h3>
+            <p style="font-size:13px;color:#5a6b7d;margin-bottom:14px;">
+                系统按此周期自动统计全班学情数据，取值范围 <b id="cfg-range">5-10</b> 分钟，修改后立即生效（无需重启）。
+            </p>
+            <div class="form-item">
+                <label>统计刷新周期（分钟）</label>
+                <input type="number" id="cfg-minutes" min="5" max="10" step="1" style="max-width:200px;">
+            </div>
+            <button class="btn" onclick="savePeriod()">保存配置</button>
+            <p id="cfg-tip" style="font-size:13px;margin-top:12px;color:#8a99a8;"></p>
+        </div>
     </div>
 </div>
 <div id="toast"></div>
@@ -23,9 +43,27 @@
         if (!user) return;
         if (user.role !== 3) { location.href = roleHome(user.role); return; }
         renderNavbar(user);
-        document.getElementById('welcome').innerHTML =
-            '欢迎你，<b>' + user.name + '</b>（系统管理员）';
+        loadPeriod();
     })();
+
+    async function loadPeriod() {
+        const r = await api('/api/admin/config/stats-period');
+        if (r.code === 0) {
+            document.getElementById('cfg-minutes').value = r.data.minutes;
+            document.getElementById('cfg-range').textContent = r.data.min + '-' + r.data.max;
+            document.getElementById('cfg-tip').textContent = '当前统计周期：' + r.data.minutes + ' 分钟';
+        }
+    }
+
+    async function savePeriod() {
+        const minutes = Number(document.getElementById('cfg-minutes').value);
+        if (!minutes) { toast('请输入周期', 'error'); return; }
+        const r = await api('/api/admin/config/stats-period', {
+            method: 'PUT', body: JSON.stringify({ minutes })
+        });
+        if (r.code === 0) { toast(r.message, 'success'); document.getElementById('cfg-tip').textContent = '当前统计周期：' + minutes + ' 分钟'; }
+        else toast(r.message, 'error');
+    }
 </script>
 </body>
 </html>

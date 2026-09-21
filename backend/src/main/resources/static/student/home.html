@@ -5,28 +5,150 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>学生端 - 课堂学情监控管理系统</title>
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .emoji-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin: 18px 0; }
+        .emoji-btn {
+            border: 2px solid #d3dde6; border-radius: 10px; background: #fff;
+            padding: 16px 6px; cursor: pointer; text-align: center; transition: all .15s;
+        }
+        .emoji-btn .face { font-size: 40px; display: block; line-height: 1.2; }
+        .emoji-btn .score { font-size: 12px; color: #8a99a8; margin-top: 4px; }
+        .emoji-btn .label { font-size: 12px; color: #34506b; margin-top: 3px; }
+        .emoji-btn:hover { border-color: #1e6fb8; transform: translateY(-2px); }
+        .emoji-btn.selected { border-color: #1e6fb8; background: #eaf3fb; box-shadow: 0 0 0 2px rgba(30,111,184,.2); }
+        @media (max-width: 640px) { .emoji-grid { grid-template-columns: repeat(3, 1fr); } }
+    </style>
 </head>
 <body>
 <div class="navbar" id="navbar"></div>
 <div class="container">
-    <div class="card">
-        <h3>学生端</h3>
-        <p id="welcome" style="font-size:15px; line-height:2;"></p>
-        <p style="color:#8a99a8; font-size:13px; margin-top:10px;">学情反馈、在线讨论等功能将在后续模块中加入。</p>
+    <div class="tabs">
+        <div class="tab active" data-tab="feedback" onclick="switchTab('feedback')">学情反馈</div>
+        <div class="tab" data-tab="mine" onclick="switchTab('mine')">我的反馈记录</div>
+        <div class="tab" data-tab="discuss" onclick="switchTab('discuss')">在线讨论</div>
+        <div class="tab" data-tab="courses" onclick="switchTab('courses')">我的课程</div>
+    </div>
+
+    <!-- 学情反馈 -->
+    <div class="tab-panel active" id="panel-feedback">
+        <div class="card">
+            <h3>提交课堂理解反馈</h3>
+            <div class="form-item">
+                <label>选择课程</label>
+                <select id="fb-course"></select>
+            </div>
+            <p style="font-size:13px;color:#5a6b7d;margin-bottom:6px;">请选择最符合你当前理解程度的表情（分值越高理解越好）：</p>
+            <div class="emoji-grid" id="emoji-grid"></div>
+            <div style="text-align:center;">
+                <button class="btn" style="min-width:160px;" onclick="submitFeedback()">提交反馈</button>
+            </div>
+            <p style="font-size:12px;color:#9aa8b5;text-align:center;margin-top:10px;">
+                可重复提交，同一课程将以你最后一次反馈为准
+            </p>
+        </div>
+    </div>
+
+    <!-- 我的反馈记录 -->
+    <div class="tab-panel" id="panel-mine">
+        <div class="card">
+            <h3>我的反馈记录（最近50条）</h3>
+            <table class="data-table">
+                <thead><tr><th>提交时间</th><th>课程</th><th>分值</th><th>理解程度</th></tr></thead>
+                <tbody id="mine-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 在线讨论（占位，任务7实现） -->
+    <div class="tab-panel" id="panel-discuss">
+        <div class="card"><h3>在线讨论</h3><p style="color:#8a99a8;">讨论区功能将在后续模块开放。</p></div>
+    </div>
+
+    <!-- 我的课程（占位，拓展模块实现） -->
+    <div class="tab-panel" id="panel-courses">
+        <div class="card"><h3>我的课程</h3><p style="color:#8a99a8;">课程与班级功能将在拓展模块开放。</p></div>
     </div>
 </div>
 <div id="toast"></div>
+
 <script src="/js/common.js"></script>
 <script>
+    const EMOJIS = [
+        { score: 1, face: '😣', label: '完全没理解' },
+        { score: 2, face: '😕', label: '理解程度较低' },
+        { score: 3, face: '😐', label: '部分理解' },
+        { score: 4, face: '🙂', label: '基本理解' },
+        { score: 5, face: '😊', label: '理解较好' },
+        { score: 6, face: '😄', label: '完全理解' }
+    ];
+    const LABEL_MAP = {};
+    EMOJIS.forEach(e => LABEL_MAP[e.score] = e);
+    let selectedScore = null;
+    let currentUser = null;
+    let courseMap = {};
+
     (async function () {
-        const user = await loadCurrentUser();
-        if (!user) return;
-        if (user.role !== 1) { location.href = roleHome(user.role); return; }
-        renderNavbar(user);
-        document.getElementById('welcome').innerHTML =
-            '欢迎你，<b>' + user.name + '</b>（学号：' + (user.studentNo || '-') + '，班级：' + (user.className || '-') + '）<br>' +
-            '所属专业：' + (user.major || '-') + '，年级：' + (user.grade || '-');
+        currentUser = await loadCurrentUser();
+        if (!currentUser) return;
+        if (currentUser.role !== 1) { location.href = roleHome(currentUser.role); return; }
+        renderNavbar(currentUser);
+        renderEmojis();
+        await loadCourses();
+        loadMine();
     })();
+
+    function renderEmojis() {
+        document.getElementById('emoji-grid').innerHTML = EMOJIS.map(e =>
+            '<div class="emoji-btn" data-score="' + e.score + '" onclick="selectScore(' + e.score + ')">' +
+            '<span class="face">' + e.face + '</span>' +
+            '<span class="label">' + e.label + '</span>' +
+            '<span class="score">' + e.score + '分</span></div>'
+        ).join('');
+    }
+
+    async function loadCourses() {
+        const r = await api('/api/courses');
+        const sel = document.getElementById('fb-course');
+        let html = '<option value="">默认课堂</option>';
+        if (r.code === 0) {
+            r.data.forEach(c => { courseMap[c.id] = c.name; html += '<option value="' + c.id + '">' + c.name + '</option>'; });
+        }
+        sel.innerHTML = html;
+    }
+
+    function selectScore(score) {
+        selectedScore = score;
+        document.querySelectorAll('.emoji-btn').forEach(b =>
+            b.classList.toggle('selected', Number(b.dataset.score) === score));
+    }
+
+    async function submitFeedback() {
+        if (selectedScore === null) { toast('请先选择一个表情', 'error'); return; }
+        const courseVal = document.getElementById('fb-course').value;
+        const body = { score: selectedScore, courseId: courseVal ? Number(courseVal) : null };
+        const r = await api('/api/student/feedback', { method: 'POST', body: JSON.stringify(body) });
+        if (r.code === 0) {
+            toast('反馈成功，感谢你的参与！', 'success');
+            selectedScore = null;
+            document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
+            loadMine();
+        } else {
+            toast(r.message, 'error');
+        }
+    }
+
+    async function loadMine() {
+        const r = await api('/api/student/feedback/mine');
+        const tbody = document.getElementById('mine-tbody');
+        if (r.code !== 0) { tbody.innerHTML = '<tr><td colspan="4">加载失败</td></tr>'; return; }
+        if (!r.data.length) { tbody.innerHTML = '<tr><td colspan="4">暂无反馈记录</td></tr>'; return; }
+        tbody.innerHTML = r.data.map(f => {
+            const e = LABEL_MAP[f.score];
+            const cname = f.courseId ? (courseMap[f.courseId] || ('课程#' + f.courseId)) : '默认课堂';
+            return '<tr><td>' + fmtTime(f.createTime) + '</td><td>' + cname + '</td>' +
+                '<td>' + e.face + ' ' + f.score + '分</td><td>' + e.label + '</td></tr>';
+        }).join('');
+    }
 </script>
 </body>
 </html>

@@ -5,27 +5,216 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教师端 - 课堂学情监控管理系统</title>
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
+        .stat-card { background: linear-gradient(135deg,#1e6fb8,#3aa0c8); color:#fff; border-radius:8px; padding:18px; text-align:center; }
+        .stat-card.highlight { background: linear-gradient(135deg,#e8821e,#f0a93e); }
+        .stat-card .num { font-size: 32px; font-weight: bold; }
+        .stat-card .cap { font-size: 13px; opacity: .92; margin-top: 4px; }
+        .emoji-dist { display: grid; grid-template-columns: repeat(6,1fr); gap: 8px; margin: 12px 0; }
+        .emoji-dist .item { text-align:center; border:1px solid #e3e9ef; border-radius:8px; padding:10px 4px; background:#fafcfe; }
+        .emoji-dist .item .face { font-size:26px; }
+        .emoji-dist .item .cnt { font-size:18px; font-weight:bold; color:#1e6fb8; }
+        .emoji-dist .item .pct { font-size:11px; color:#8a99a8; }
+        .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .chart-box { height: 320px; }
+        @media (max-width: 900px) { .stat-cards { grid-template-columns: 1fr; } .charts { grid-template-columns: 1fr; } .emoji-dist { grid-template-columns: repeat(3,1fr); } }
+    </style>
 </head>
 <body>
 <div class="navbar" id="navbar"></div>
 <div class="container">
-    <div class="card">
-        <h3>教师端</h3>
-        <p id="welcome" style="font-size:15px; line-height:2;"></p>
-        <p style="color:#8a99a8; font-size:13px; margin-top:10px;">实时学情统计、历史查询、Excel导出、在线讨论、课程班级管理等功能将在后续模块中加入。</p>
+    <div class="tabs">
+        <div class="tab active" data-tab="stats" onclick="switchTab('stats')">实时学情统计</div>
+        <div class="tab" data-tab="history" onclick="switchTab('history')">历史查询与导出</div>
+        <div class="tab" data-tab="discuss" onclick="switchTab('discuss')">在线讨论</div>
+        <div class="tab" data-tab="course" onclick="switchTab('course')">课程班级管理</div>
+    </div>
+
+    <!-- 实时统计 -->
+    <div class="tab-panel active" id="panel-stats">
+        <div class="card">
+            <div class="toolbar">
+                <label style="font-size:14px;">课程：</label>
+                <select id="st-course" onchange="loadLatest()"></select>
+                <button class="btn btn-sm" onclick="refreshStats()">立即统计</button>
+                <span id="st-time" style="font-size:12px;color:#8a99a8;margin-left:auto;"></span>
+            </div>
+
+            <h3 style="background:#fff6e8;border-left-color:#e8821e;color:#c06a10;padding:8px 10px;border-radius:4px;">
+                当前时段学情（显著展示）
+            </h3>
+            <div class="stat-cards">
+                <div class="stat-card highlight"><div class="num" id="c-total">-</div><div class="cap">提交学生人数</div></div>
+                <div class="stat-card"><div class="num" id="c-avg">-</div><div class="cap">班级平均分</div></div>
+                <div class="stat-card"><div class="num" id="c-var">-</div><div class="cap">分数方差</div></div>
+            </div>
+
+            <h3>各分数（表情）分布</h3>
+            <div class="emoji-dist" id="emoji-dist"></div>
+
+            <div class="charts">
+                <div class="card" style="margin-bottom:0;"><h3>柱状图：各分数人数</h3><div id="bar-chart" class="chart-box"></div></div>
+                <div class="card" style="margin-bottom:0;"><h3>饼状图：分数分布占比</h3><div id="pie-chart" class="chart-box"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 历史查询（任务6完善导出） -->
+    <div class="tab-panel" id="panel-history">
+        <div class="card">
+            <h3>历史学情查询</h3>
+            <div class="toolbar">
+                <select id="h-course"></select>
+                <input type="date" id="h-start">
+                <span>至</span>
+                <input type="date" id="h-end">
+                <button class="btn btn-sm" onclick="loadHistory()">查询</button>
+                <button class="btn btn-sm btn-success" onclick="exportExcel()">导出Excel</button>
+            </div>
+            <table class="data-table">
+                <thead><tr>
+                    <th>统计时间</th><th>课程</th><th>提交人数</th><th>平均分</th><th>方差</th>
+                    <th>1分</th><th>2分</th><th>3分</th><th>4分</th><th>5分</th><th>6分</th>
+                </tr></thead>
+                <tbody id="history-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 讨论（占位，任务7） -->
+    <div class="tab-panel" id="panel-discuss">
+        <div class="card"><h3>在线讨论</h3><p style="color:#8a99a8;">讨论区功能将在后续模块开放。</p></div>
+    </div>
+
+    <!-- 课程班级（占位，拓展模块） -->
+    <div class="tab-panel" id="panel-course">
+        <div class="card"><h3>课程班级管理</h3><p style="color:#8a99a8;">课程与班级管理为自主拓展模块，稍后实现。</p></div>
     </div>
 </div>
 <div id="toast"></div>
+
+<script src="/js/echarts.min.js"></script>
 <script src="/js/common.js"></script>
 <script>
+    const EMOJI_FACES = ['😣','😕','😐','🙂','😊','😄'];
+    const EMOJI_LABELS = ['完全没理解','理解较低','部分理解','基本理解','理解较好','完全理解'];
+    let barChart = null, pieChart = null;
+
     (async function () {
         const user = await loadCurrentUser();
         if (!user) return;
         if (user.role !== 2) { location.href = roleHome(user.role); return; }
         renderNavbar(user);
-        document.getElementById('welcome').innerHTML =
-            '欢迎你，<b>' + user.name + ' 老师</b>（联系方式：' + (user.phone || '-') + '）';
+        await loadCourseOptions();
+        loadLatest();
+        setInterval(loadLatest, 30000); // 30秒自动刷新当前时段
     })();
+
+    async function loadCourseOptions() {
+        const r = await api('/api/courses');
+        let html = '<option value="">默认课堂</option>';
+        if (r.code === 0) r.data.forEach(c => html += '<option value="' + c.id + '">' + c.name + '</option>');
+        document.getElementById('st-course').innerHTML = html;
+        document.getElementById('h-course').innerHTML = html;
+    }
+
+    function currentCourseId() {
+        const v = document.getElementById('st-course').value;
+        return v ? Number(v) : null;
+    }
+
+    async function refreshStats() {
+        const r = await api('/api/teacher/stats/refresh', { method: 'POST' });
+        if (r.code === 0) { toast('统计完成', 'success'); loadLatest(); }
+        else toast(r.message, 'error');
+    }
+
+    async function loadLatest() {
+        const cid = currentCourseId();
+        const url = '/api/teacher/stats/latest' + (cid !== null ? '?courseId=' + cid : '');
+        const r = await api(url);
+        if (r.code !== 0) { toast(r.message, 'error'); return; }
+        const s = r.data;
+        if (!s) {
+            document.getElementById('c-total').textContent = '0';
+            document.getElementById('c-avg').textContent = '-';
+            document.getElementById('c-var').textContent = '-';
+            document.getElementById('st-time').textContent = '暂无统计数据，请点击"立即统计"';
+            document.getElementById('emoji-dist').innerHTML = '';
+            renderCharts([0,0,0,0,0,0], 0);
+            return;
+        }
+        const counts = [s.score1Count,s.score2Count,s.score3Count,s.score4Count,s.score5Count,s.score6Count];
+        document.getElementById('c-total').textContent = s.totalCount;
+        document.getElementById('c-avg').textContent = s.avgScore;
+        document.getElementById('c-var').textContent = s.variance;
+        document.getElementById('st-time').textContent = '统计时间：' + fmtTime(s.statTime);
+        const total = s.totalCount || 0;
+        document.getElementById('emoji-dist').innerHTML = counts.map((c,i) => {
+            const pct = total ? (c/total*100).toFixed(0) : 0;
+            return '<div class="item"><div class="face">' + EMOJI_FACES[i] + '</div>' +
+                '<div class="cnt">' + c + '人</div><div class="pct">' + pct + '% · ' + (i+1) + '分</div></div>';
+        }).join('');
+        renderCharts(counts, total);
+    }
+
+    function renderCharts(counts, total) {
+        if (!barChart) barChart = echarts.init(document.getElementById('bar-chart'));
+        if (!pieChart) pieChart = echarts.init(document.getElementById('pie-chart'));
+        barChart.setOption({
+            tooltip: { trigger: 'axis' },
+            xAxis: { type: 'category', data: EMOJI_LABELS.map((l,i)=>(i+1)+'分') },
+            yAxis: { type: 'value', minInterval: 1 },
+            series: [{ type: 'bar', data: counts, itemStyle: { color: '#1e6fb8' }, barWidth: '50%', label: { show: true, position: 'top' } }],
+            grid: { left: 40, right: 20, top: 30, bottom: 30 }
+        });
+        const pieData = counts.map((c,i) => ({ name: (i+1)+'分 '+EMOJI_LABELS[i], value: c })).filter(d => d.value > 0);
+        pieChart.setOption({
+            tooltip: { trigger: 'item', formatter: '{b}: {c}人 ({d}%)' },
+            legend: { bottom: 0, type: 'scroll' },
+            series: [{ type: 'pie', radius: ['38%','62%'], center: ['50%','45%'], data: pieData,
+                label: { formatter: '{b}\n{c}人' } }]
+        });
+    }
+
+    async function loadHistory() {
+        const cid = document.getElementById('h-course').value;
+        const start = document.getElementById('h-start').value;
+        const end = document.getElementById('h-end').value;
+        let url = '/api/teacher/stats/history?';
+        if (cid) url += 'courseId=' + cid + '&';
+        if (start) url += 'startTime=' + encodeURIComponent(start + ' 00:00:00') + '&';
+        if (end) url += 'endTime=' + encodeURIComponent(end + ' 23:59:59');
+        const r = await api(url);
+        const tbody = document.getElementById('history-tbody');
+        if (r.code !== 0) { toast(r.message,'error'); return; }
+        if (!r.data.length) { tbody.innerHTML = '<tr><td colspan="11">暂无历史数据</td></tr>'; return; }
+        tbody.innerHTML = r.data.map(s => '<tr><td>' + fmtTime(s.statTime) + '</td><td>' + s.courseName + '</td>' +
+            '<td>' + s.totalCount + '</td><td>' + s.avgScore + '</td><td>' + s.variance + '</td>' +
+            '<td>'+s.score1Count+'</td><td>'+s.score2Count+'</td><td>'+s.score3Count+'</td>' +
+            '<td>'+s.score4Count+'</td><td>'+s.score5Count+'</td><td>'+s.score6Count+'</td></tr>').join('');
+    }
+
+    function exportExcel() {
+        const cid = document.getElementById('h-course').value;
+        const start = document.getElementById('h-start').value;
+        const end = document.getElementById('h-end').value;
+        let url = '/api/teacher/stats/export?';
+        if (cid) url += 'courseId=' + cid + '&';
+        if (start) url += 'startTime=' + encodeURIComponent(start + ' 00:00:00') + '&';
+        if (end) url += 'endTime=' + encodeURIComponent(end + ' 23:59:59');
+        // 带 token 的文件下载
+        fetch(url, { headers: { 'Authorization': 'Bearer ' + getToken() } })
+            .then(res => { if (!res.ok) throw new Error('导出失败'); return res.blob(); })
+            .then(blob => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = '学情统计.xlsx';
+                a.click();
+                toast('导出成功', 'success');
+            }).catch(() => toast('导出失败（导出接口将在任务6实现）', 'error'));
+    }
 </script>
 </body>
 </html>
