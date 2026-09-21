@@ -13,6 +13,12 @@ build/
 .mypy_cache/
 .ruff_cache/
 
+# Java / Maven 构建产物
+target/
+*.class
+*.jar
+*.war
+
 # IDE / 编辑器
 .idea/
 .vscode/

@@ -1,5 +1,0 @@
-com\classcheck\common\Result.class
-com\classcheck\common\GlobalExceptionHandler.class
-com\classcheck\controller\HealthController.class
-com\classcheck\common\BusinessException.class
-com\classcheck\ClasscheckApplication.class
