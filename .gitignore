@@ -28,3 +28,6 @@ Desktop.ini
 *.log
 *.tmp
 *.bak
+
+# 本地工具（Maven 等，不入库）
+/tools/
