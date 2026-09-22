@@ -129,3 +129,67 @@ table.data-table tr:nth-child(even) td { background: #fafcfe; }
 /* 工具行 */
 .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
 .toolbar input, .toolbar select { padding: 8px 10px; border: 1px solid #d3dde6; border-radius: 5px; font-size: 14px; }
+
+/* ========== 在线讨论区 ========== */
+.discuss-box { display: flex; flex-direction: column; }
+.discuss-list {
+    height: 440px;
+    overflow-y: auto;
+    background: #f5f8fb;
+    border: 1px solid #e3e9ef;
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.discuss-empty { text-align: center; color: #9aa8b5; margin: auto; font-size: 14px; }
+.discuss-msg { display: flex; flex-direction: column; max-width: 72%; }
+.discuss-msg.mine { align-self: flex-end; align-items: flex-end; }
+.discuss-meta { display: flex; gap: 6px; align-items: center; font-size: 12px; color: #8a99a8; margin-bottom: 4px; }
+.discuss-msg.mine .discuss-meta { flex-direction: row-reverse; }
+.discuss-name { color: #34506b; font-weight: 600; }
+.discuss-role { padding: 0 7px; border-radius: 9px; font-size: 11px; color: #fff; }
+.discuss-role.role-1 { background: #3aa0c8; }
+.discuss-role.role-2 { background: #e8821e; }
+.discuss-role.role-3 { background: #8a6fd0; }
+.discuss-body { display: flex; flex-direction: column; gap: 6px; }
+.discuss-bubble {
+    background: #fff;
+    border: 1px solid #e3e9ef;
+    border-radius: 4px 12px 12px 12px;
+    padding: 9px 13px;
+    font-size: 14px;
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+.discuss-msg.mine .discuss-bubble {
+    background: #eaf3fb;
+    border-color: #b9d6ef;
+    border-radius: 12px 4px 12px 12px;
+}
+.discuss-img { max-width: 240px; max-height: 180px; border-radius: 8px; border: 1px solid #e3e9ef; cursor: pointer; display: block; }
+.discuss-image-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0 0;
+}
+.discuss-image-preview img { width: 64px; height: 64px; object-fit: cover; border-radius: 6px; border: 1px solid #d3dde6; }
+.discuss-img-cancel { background: #e05b5b; color: #fff; border: none; padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.discuss-composer { display: flex; gap: 8px; margin-top: 12px; }
+.discuss-composer input[type="text"] {
+    flex: 1;
+    padding: 9px 12px;
+    border: 1px solid #d3dde6;
+    border-radius: 5px;
+    font-size: 14px;
+    outline: none;
+}
+.discuss-composer input[type="text"]:focus { border-color: #1e6fb8; }
+.discuss-hint { font-size: 12px; color: #9aa8b5; margin-top: 8px; }
+@media (max-width: 640px) {
+    .discuss-msg { max-width: 88%; }
+    .discuss-img { max-width: 180px; }
+}

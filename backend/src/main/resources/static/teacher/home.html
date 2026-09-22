@@ -82,9 +82,12 @@
         </div>
     </div>
 
-    <!-- 讨论（占位，任务7） -->
+    <!-- 在线讨论 -->
     <div class="tab-panel" id="panel-discuss">
-        <div class="card"><h3>在线讨论</h3><p style="color:#8a99a8;">讨论区功能将在后续模块开放。</p></div>
+        <div class="card">
+            <h3>在线讨论（师生互动）</h3>
+            <div id="discuss-root"></div>
+        </div>
     </div>
 
     <!-- 课程班级（占位，拓展模块） -->
@@ -96,6 +99,7 @@
 
 <script src="/js/echarts.min.js"></script>
 <script src="/js/common.js"></script>
+<script src="/js/discuss.js"></script>
 <script>
     const EMOJI_FACES = ['😣','😕','😐','🙂','😊','😄'];
     const EMOJI_LABELS = ['完全没理解','理解较低','部分理解','基本理解','理解较好','完全理解'];
@@ -109,6 +113,7 @@
         await loadCourseOptions();
         loadLatest();
         setInterval(loadLatest, 30000); // 30秒自动刷新当前时段
+        initDiscussion(user);
     })();
 
     async function loadCourseOptions() {

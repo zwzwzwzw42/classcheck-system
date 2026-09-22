@@ -59,9 +59,12 @@
         </div>
     </div>
 
-    <!-- 在线讨论（占位，任务7实现） -->
+    <!-- 在线讨论 -->
     <div class="tab-panel" id="panel-discuss">
-        <div class="card"><h3>在线讨论</h3><p style="color:#8a99a8;">讨论区功能将在后续模块开放。</p></div>
+        <div class="card">
+            <h3>在线讨论（师生互动）</h3>
+            <div id="discuss-root"></div>
+        </div>
     </div>
 
     <!-- 我的课程（占位，拓展模块实现） -->
@@ -72,6 +75,7 @@
 <div id="toast"></div>
 
 <script src="/js/common.js"></script>
+<script src="/js/discuss.js"></script>
 <script>
     const EMOJIS = [
         { score: 1, face: '😣', label: '完全没理解' },
@@ -95,6 +99,7 @@
         renderEmojis();
         await loadCourses();
         loadMine();
+        initDiscussion(currentUser);
     })();
 
     function renderEmojis() {

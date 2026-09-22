@@ -37,3 +37,9 @@ Desktop.ini
 
 # 本地工具（Maven 等，不入库）
 /tools/
+
+# 讨论区上传图片（运行时生成，不入库；保留 .gitkeep 维持目录）
+backend/uploads/*
+!backend/uploads/.gitkeep
+uploads/*
+!uploads/.gitkeep
