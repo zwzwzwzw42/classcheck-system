@@ -206,14 +206,26 @@
         if (end) url += 'endTime=' + encodeURIComponent(end + ' 23:59:59');
         // 带 token 的文件下载
         fetch(url, { headers: { 'Authorization': 'Bearer ' + getToken() } })
-            .then(res => { if (!res.ok) throw new Error('导出失败'); return res.blob(); })
+            .then(res => {
+                if (!res.ok) throw new Error('导出失败');
+                // 从响应头解析后端生成的文件名
+                const cd = res.headers.get('Content-Disposition') || '';
+                const m = cd.match(/filename\*=UTF-8''([^;]+)/i);
+                window.__exportName = m ? decodeURIComponent(m[1]) : '';
+                return res.blob();
+            })
             .then(blob => {
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
-                a.download = '学情统计.xlsx';
+                const now = new Date();
+                const pad = n => String(n).padStart(2, '0');
+                const fallback = '学情统计_' + now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate())
+                    + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds()) + '.xlsx';
+                a.download = window.__exportName || fallback;
                 a.click();
+                URL.revokeObjectURL(a.href);
                 toast('导出成功', 'success');
-            }).catch(() => toast('导出失败（导出接口将在任务6实现）', 'error'));
+            }).catch(() => toast('导出失败，请稍后重试', 'error'));
     }
 </script>
 </body>
