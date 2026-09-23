@@ -67,9 +67,12 @@
         </div>
     </div>
 
-    <!-- 我的课程（占位，拓展模块实现） -->
+    <!-- 我的课程（拓展模块） -->
     <div class="tab-panel" id="panel-courses">
-        <div class="card"><h3>我的课程</h3><p style="color:#8a99a8;">课程与班级功能将在拓展模块开放。</p></div>
+        <div class="card">
+            <h3>我的课程与班级</h3>
+            <div id="my-course-list"></div>
+        </div>
     </div>
 </div>
 <div id="toast"></div>
@@ -100,6 +103,7 @@
         await loadCourses();
         loadMine();
         initDiscussion(currentUser);
+        loadMyCourses();
     })();
 
     function renderEmojis() {
@@ -153,6 +157,24 @@
             return '<tr><td>' + fmtTime(f.createTime) + '</td><td>' + cname + '</td>' +
                 '<td>' + e.face + ' ' + f.score + '分</td><td>' + e.label + '</td></tr>';
         }).join('');
+    }
+
+    async function loadMyCourses() {
+        const r = await api('/api/student/courses');
+        const box = document.getElementById('my-course-list');
+        if (r.code !== 0) { box.innerHTML = '<p style="color:#8a99a8;">加载失败</p>'; return; }
+        if (!r.data.length) { box.innerHTML = '<p style="color:#8a99a8;">你还没有加入任何课程班级，请联系任课教师添加。</p>'; return; }
+        box.innerHTML = r.data.map(c =>
+            '<div style="border:1px solid #e3e9ef;border-radius:8px;padding:14px;margin-bottom:12px;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">' +
+                    '<b style="font-size:15px;color:#1e6fb8;">' + c.courseName + '</b>' +
+                    '<span style="font-size:12px;color:#8a99a8;">任课教师：' + c.teacherName + '</span>' +
+                '</div>' +
+                (c.description ? '<p style="font-size:13px;color:#5a6b7d;margin:8px 0;">' + c.description + '</p>' : '') +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">' +
+                    c.classes.map(cl => '<span style="background:#eaf3fb;border:1px solid #b9d6ef;color:#1e6fb8;border-radius:12px;padding:3px 12px;font-size:12px;">' + cl.className + '</span>').join('') +
+                '</div>' +
+            '</div>').join('');
     }
 </script>
 </body>

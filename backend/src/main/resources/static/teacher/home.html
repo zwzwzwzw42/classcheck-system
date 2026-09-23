@@ -18,7 +18,36 @@
         .emoji-dist .item .pct { font-size:11px; color:#8a99a8; }
         .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .chart-box { height: 320px; }
-        @media (max-width: 900px) { .stat-cards { grid-template-columns: 1fr; } .charts { grid-template-columns: 1fr; } .emoji-dist { grid-template-columns: repeat(3,1fr); } }
+        /* 课程班级三级管理 */
+        .manage-grid { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 14px; align-items: start; }
+        .manage-col { border: 1px solid #e3e9ef; border-radius: 8px; background: #fafcfe; min-height: 320px; }
+        .manage-col .col-head {
+            padding: 10px 12px; border-bottom: 1px solid #e3e9ef; display: flex;
+            align-items: center; justify-content: space-between; gap: 6px; background: #f4f8fc;
+            border-radius: 8px 8px 0 0;
+        }
+        .manage-col .col-head .t { font-size: 14px; font-weight: 600; color: #34506b; }
+        .manage-col .col-body { padding: 8px; }
+        .manage-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 6px;
+            padding: 9px 10px; border: 1px solid #e3e9ef; border-radius: 6px; background: #fff;
+            margin-bottom: 7px; cursor: pointer; font-size: 14px;
+        }
+        .manage-item:hover { border-color: #9cc3e6; }
+        .manage-item.selected { border-color: #1e6fb8; background: #eaf3fb; box-shadow: 0 0 0 1px #1e6fb8 inset; }
+        .manage-item .item-ops { display: flex; gap: 2px; flex-shrink: 0; }
+        .manage-item .item-ops button { background: none; border: none; cursor: pointer; font-size: 13px; color: #1e6fb8; padding: 0 4px; }
+        .manage-item .item-ops button.del { color: #c14747; }
+        .col-placeholder { color: #a5b2bf; font-size: 13px; text-align: center; padding: 40px 10px; }
+        .roster-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-bottom: 1px solid #eef2f6; font-size: 13px; }
+        .roster-item:last-child { border-bottom: none; }
+        .roster-item .who { display: flex; gap: 8px; align-items: center; }
+        .roster-item .no { color: #8a99a8; font-size: 12px; min-width: 92px; }
+        .student-pick-list { max-height: 380px; overflow-y: auto; border: 1px solid #e3e9ef; border-radius: 6px; padding: 6px 10px; }
+        .student-pick { display: flex; align-items: center; gap: 8px; padding: 6px 2px; border-bottom: 1px solid #f0f4f8; font-size: 14px; }
+        .student-pick:last-child { border-bottom: none; }
+        .student-pick .meta { color: #8a99a8; font-size: 12px; }
+        @media (max-width: 900px) { .stat-cards { grid-template-columns: 1fr; } .charts { grid-template-columns: 1fr; } .emoji-dist { grid-template-columns: repeat(3,1fr); } .manage-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -90,9 +119,81 @@
         </div>
     </div>
 
-    <!-- 课程班级（占位，拓展模块） -->
+    <!-- 课程班级管理（拓展模块） -->
     <div class="tab-panel" id="panel-course">
-        <div class="card"><h3>课程班级管理</h3><p style="color:#8a99a8;">课程与班级管理为自主拓展模块，稍后实现。</p></div>
+        <div class="card">
+            <h3>课程班级管理（自主拓展）：课程 → 班级 → 学生名单</h3>
+            <div class="manage-grid">
+                <!-- 课程列 -->
+                <div class="manage-col">
+                    <div class="col-head">
+                        <span class="t">我的课程</span>
+                        <button class="btn btn-sm btn-success" onclick="openCourseModal()">+ 新增</button>
+                    </div>
+                    <div class="col-body" id="course-col-body">
+                        <div class="col-placeholder">加载中…</div>
+                    </div>
+                </div>
+                <!-- 班级列 -->
+                <div class="manage-col">
+                    <div class="col-head">
+                        <span class="t" id="class-col-title">班级</span>
+                        <button class="btn btn-sm btn-success" id="add-class-btn" disabled onclick="openClassModal()">+ 新增</button>
+                    </div>
+                    <div class="col-body" id="class-col-body">
+                        <div class="col-placeholder">请先在左侧选择一门课程</div>
+                    </div>
+                </div>
+                <!-- 名单列 -->
+                <div class="manage-col">
+                    <div class="col-head">
+                        <span class="t" id="roster-col-title">学生名单</span>
+                        <button class="btn btn-sm btn-success" id="add-stu-btn" disabled onclick="openAddStudents()">+ 添加学生</button>
+                    </div>
+                    <div class="col-body" id="roster-col-body">
+                        <div class="col-placeholder">请先选择一个班级</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 课程弹窗 -->
+<div class="modal-mask" id="course-modal">
+    <div class="modal">
+        <h3><span id="course-modal-title">新增课程</span><button class="close" onclick="closeCourseModal()">&times;</button></h3>
+        <div class="form-item"><label>课程名称 *</label><input type="text" id="cm-name" maxlength="100"></div>
+        <div class="form-item"><label>课程简介</label><textarea id="cm-desc" rows="3" maxlength="255"></textarea></div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeCourseModal()">取消</button>
+            <button class="btn" onclick="saveCourse()">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 班级弹窗 -->
+<div class="modal-mask" id="class-modal">
+    <div class="modal">
+        <h3><span id="class-modal-title">新增班级</span><button class="close" onclick="closeClassModal()">&times;</button></h3>
+        <div class="form-item"><label>班级名称 *</label><input type="text" id="clm-name" maxlength="50"></div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeClassModal()">取消</button>
+            <button class="btn" onclick="saveClass()">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 添加学生弹窗 -->
+<div class="modal-mask" id="student-modal">
+    <div class="modal">
+        <h3><span>添加学生到班级</span><button class="close" onclick="closeAddStudents()">&times;</button></h3>
+        <p style="font-size:13px;color:#5a6b7d;margin-bottom:10px;">勾选要加入本班的学生（已在班级中的默认勾选并标注）：</p>
+        <div class="student-pick-list" id="student-pick-list"></div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeAddStudents()">取消</button>
+            <button class="btn" onclick="saveAddStudents()">保存</button>
+        </div>
     </div>
 </div>
 <div id="toast"></div>
@@ -114,6 +215,7 @@
         loadLatest();
         setInterval(loadLatest, 30000); // 30秒自动刷新当前时段
         initDiscussion(user);
+        loadCourses();
     })();
 
     async function loadCourseOptions() {
@@ -231,6 +333,184 @@
                 URL.revokeObjectURL(a.href);
                 toast('导出成功', 'success');
             }).catch(() => toast('导出失败，请稍后重试', 'error'));
+    }
+
+    // ============ 课程班级管理（拓展模块） ============
+    let myCoursesList = [];
+    let selCourse = null;
+    let classesList = [];
+    let selClass = null;
+    let rosterList = [];
+    let editingCourseId = null;
+    let editingClassId = null;
+
+    async function loadCourses() {
+        const r = await api('/api/teacher/courses');
+        const body = document.getElementById('course-col-body');
+        if (r.code !== 0) { body.innerHTML = '<div class="col-placeholder">加载失败</div>'; return; }
+        myCoursesList = r.data;
+        if (!r.data.length) { body.innerHTML = '<div class="col-placeholder">还没有课程，点击右上角新增</div>'; return; }
+        body.innerHTML = r.data.map(c =>
+            '<div class="manage-item ' + (selCourse && selCourse.id === c.id ? 'selected' : '') + '" onclick="selectCourse(' + c.id + ')">' +
+                '<span>' + escHtml(c.name) + '</span>' +
+                '<span class="item-ops">' +
+                    '<button title="编辑" onclick="event.stopPropagation();openCourseModal(' + c.id + ')">编辑</button>' +
+                    '<button class="del" title="删除" onclick="event.stopPropagation();deleteCourse(' + c.id + ')">删除</button>' +
+                '</span></div>').join('');
+    }
+
+    function escHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
+    async function selectCourse(id) {
+        selCourse = myCoursesList.find(c => c.id === id);
+        selClass = null;
+        document.getElementById('add-class-btn').disabled = false;
+        document.getElementById('class-col-title').textContent = '班级 · ' + selCourse.name;
+        loadCourses(); // 刷新选中样式
+        const r = await api('/api/teacher/courses/' + id + '/classes');
+        const body = document.getElementById('class-col-body');
+        if (r.code !== 0) { body.innerHTML = '<div class="col-placeholder">加载失败</div>'; return; }
+        classesList = r.data;
+        document.getElementById('add-stu-btn').disabled = true;
+        document.getElementById('roster-col-body').innerHTML = '<div class="col-placeholder">请先选择一个班级</div>';
+        document.getElementById('roster-col-title').textContent = '学生名单';
+        if (!r.data.length) { body.innerHTML = '<div class="col-placeholder">该课程还没有班级</div>'; return; }
+        body.innerHTML = r.data.map(c =>
+            '<div class="manage-item" onclick="selectClass(' + c.id + ')">' +
+                '<span>' + escHtml(c.name) + '</span>' +
+                '<span class="item-ops"><button class="del" onclick="event.stopPropagation();deleteClass(' + c.id + ')">删除</button></span>' +
+            '</div>').join('');
+    }
+
+    async function selectClass(id) {
+        selClass = classesList.find(c => c.id === id);
+        document.querySelectorAll('#class-col-body .manage-item').forEach((el, i) =>
+            el.classList.toggle('selected', classesList[i].id === id));
+        document.getElementById('add-stu-btn').disabled = false;
+        document.getElementById('roster-col-title').textContent = '名单 · ' + selClass.name;
+        await loadRoster();
+    }
+
+    async function loadRoster() {
+        const r = await api('/api/teacher/classes/' + selClass.id + '/students');
+        const body = document.getElementById('roster-col-body');
+        if (r.code !== 0) { body.innerHTML = '<div class="col-placeholder">加载失败</div>'; return; }
+        rosterList = r.data;
+        if (!r.data.length) { body.innerHTML = '<div class="col-placeholder">名单为空，点击右上角添加</div>'; return; }
+        body.innerHTML = r.data.map(u =>
+            '<div class="roster-item"><span class="who">' +
+                '<span class="no">' + escHtml(u.studentNo || '-') + '</span>' +
+                '<span>' + escHtml(u.name) + '</span></span>' +
+                '<button class="op-link danger" style="color:#c14747;" onclick="removeStudent(' + u.id + ')">移除</button>' +
+            '</div>').join('');
+    }
+
+    // ---- 课程弹窗 ----
+    function openCourseModal(id) {
+        editingCourseId = id || null;
+        document.getElementById('course-modal-title').textContent = id ? '编辑课程' : '新增课程';
+        if (id) {
+            const c = myCoursesList.find(x => x.id === id);
+            document.getElementById('cm-name').value = c.name;
+            document.getElementById('cm-desc').value = c.description || '';
+        } else {
+            document.getElementById('cm-name').value = '';
+            document.getElementById('cm-desc').value = '';
+        }
+        document.getElementById('course-modal').classList.add('show');
+    }
+    function closeCourseModal() { document.getElementById('course-modal').classList.remove('show'); }
+    async function saveCourse() {
+        const name = document.getElementById('cm-name').value.trim();
+        const description = document.getElementById('cm-desc').value.trim();
+        if (!name) { toast('课程名称不能为空', 'error'); return; }
+        const body = JSON.stringify({ name, description });
+        const r = editingCourseId
+            ? await api('/api/teacher/courses/' + editingCourseId, { method: 'PUT', body })
+            : await api('/api/teacher/courses', { method: 'POST', body });
+        if (r.code === 0) { toast(r.message, 'success'); closeCourseModal(); await loadCourses(); }
+        else toast(r.message, 'error');
+    }
+    async function deleteCourse(id) {
+        if (!confirm('删除该课程将同时删除其下所有班级与名单，确定吗？')) return;
+        const r = await api('/api/teacher/courses/' + id, { method: 'DELETE' });
+        if (r.code === 0) {
+            toast(r.message, 'success');
+            if (selCourse && selCourse.id === id) {
+                selCourse = null;
+                document.getElementById('class-col-body').innerHTML = '<div class="col-placeholder">请先在左侧选择一门课程</div>';
+                document.getElementById('roster-col-body').innerHTML = '<div class="col-placeholder">请先选择一个班级</div>';
+                document.getElementById('add-class-btn').disabled = true;
+                document.getElementById('add-stu-btn').disabled = true;
+            }
+            loadCourses();
+        } else toast(r.message, 'error');
+    }
+
+    // ---- 班级弹窗 ----
+    function openClassModal() {
+        editingClassId = null;
+        document.getElementById('clm-name').value = '';
+        document.getElementById('class-modal').classList.add('show');
+    }
+    function closeClassModal() { document.getElementById('class-modal').classList.remove('show'); }
+    async function saveClass() {
+        const name = document.getElementById('clm-name').value.trim();
+        if (!name) { toast('班级名称不能为空', 'error'); return; }
+        const body = JSON.stringify({ name, courseId: selCourse.id });
+        const r = await api('/api/teacher/classes', { method: 'POST', body });
+        if (r.code === 0) { toast(r.message, 'success'); closeClassModal(); selectCourse(selCourse.id); }
+        else toast(r.message, 'error');
+    }
+    async function deleteClass(id) {
+        if (!confirm('确定删除该班级及其学生名单关联吗？')) return;
+        const r = await api('/api/teacher/classes/' + id, { method: 'DELETE' });
+        if (r.code === 0) {
+            toast(r.message, 'success');
+            if (selClass && selClass.id === id) {
+                selClass = null;
+                document.getElementById('roster-col-body').innerHTML = '<div class="col-placeholder">请先选择一个班级</div>';
+                document.getElementById('add-stu-btn').disabled = true;
+            }
+            selectCourse(selCourse.id);
+        } else toast(r.message, 'error');
+    }
+
+    // ---- 添加学生 ----
+    async function openAddStudents() {
+        const [allRes, inRes] = await Promise.all([
+            api('/api/teacher/students/all'),
+            api('/api/teacher/classes/' + selClass.id + '/students')
+        ]);
+        if (allRes.code !== 0) return;
+        const inIds = new Set(inRes.data.map(u => u.id));
+        document.getElementById('student-pick-list').innerHTML = allRes.data.map(u => {
+            const checked = inIds.has(u.id);
+            return '<label class="student-pick"><input type="checkbox" value="' + u.id + '" ' +
+                (checked ? 'checked' : '') + '> <span>' + escHtml(u.name) + '</span>' +
+                '<span class="meta">' + escHtml(u.studentNo || '') + ' ' + escHtml(u.className || '') +
+                (checked ? '（已在班）' : '') + '</span></label>';
+        }).join('');
+        document.getElementById('student-modal').classList.add('show');
+    }
+    function closeAddStudents() { document.getElementById('student-modal').classList.remove('show'); }
+    async function saveAddStudents() {
+        const ids = Array.from(document.querySelectorAll('#student-pick-list input:checked'))
+            .map(cb => Number(cb.value));
+        const r = await api('/api/teacher/classes/' + selClass.id + '/students', {
+            method: 'POST', body: JSON.stringify({ studentIds: ids })
+        });
+        if (r.code === 0) { toast(r.message, 'success'); closeAddStudents(); loadRoster(); }
+        else toast(r.message, 'error');
+    }
+    async function removeStudent(sid) {
+        const r = await api('/api/teacher/classes/' + selClass.id + '/students/' + sid, { method: 'DELETE' });
+        if (r.code === 0) { toast(r.message, 'success'); loadRoster(); }
+        else toast(r.message, 'error');
     }
 </script>
 </body>
