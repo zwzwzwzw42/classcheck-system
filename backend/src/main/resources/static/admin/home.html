@@ -5,6 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理员端 - 课堂学情监控管理系统</title>
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .role-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+        .role-filter button {
+            padding: 5px 16px; border: 1px solid #d3dde6; background: #fff; border-radius: 16px;
+            cursor: pointer; font-size: 13px; color: #5a6b7d;
+        }
+        .role-filter button.active { background: #1e6fb8; color: #fff; border-color: #1e6fb8; }
+        .status-tag { padding: 2px 10px; border-radius: 10px; font-size: 12px; }
+        .status-tag.on { background: #e3f5eb; color: #2d8a57; }
+        .status-tag.off { background: #fbeaea; color: #c14747; }
+        .op-link { background: none; border: none; color: #1e6fb8; cursor: pointer; font-size: 13px; padding: 0 4px; }
+        .op-link.danger { color: #c14747; }
+        .op-link:disabled { color: #b9c4ce; cursor: not-allowed; }
+        /* 弹窗 */
+        .modal-mask {
+            display: none; position: fixed; inset: 0; background: rgba(30,45,60,.45);
+            z-index: 1000; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto;
+        }
+        .modal-mask.show { display: flex; }
+        .modal {
+            background: #fff; border-radius: 8px; width: 600px; max-width: 100%; padding: 22px 24px;
+            box-shadow: 0 8px 30px rgba(0,0,0,.2);
+        }
+        .modal h3 { border-left: none; padding-left: 0; margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center; }
+        .modal h3 .close { background:none;border:none;font-size:22px;color:#8a99a8;cursor:pointer;line-height:1; }
+        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+        .modal-grid .full { grid-column: 1 / -1; }
+        .modal-footer { text-align: right; margin-top: 16px; display: flex; gap: 10px; justify-content: flex-end; }
+    </style>
 </head>
 <body>
 <div class="navbar" id="navbar"></div>
@@ -14,9 +43,29 @@
         <div class="tab" data-tab="config" onclick="switchTab('config')">系统配置</div>
     </div>
 
-    <!-- 用户管理（占位，任务8实现） -->
+    <!-- 用户管理 -->
     <div class="tab-panel active" id="panel-users">
-        <div class="card"><h3>用户账号管理</h3><p style="color:#8a99a8;">学生/教师/管理员账号的增删改查功能将在后续模块实现。</p></div>
+        <div class="card">
+            <div class="toolbar">
+                <div class="role-filter" id="role-filter">
+                    <button data-role="" class="active" onclick="setRoleFilter('')">全部</button>
+                    <button data-role="1" onclick="setRoleFilter(1)">学生</button>
+                    <button data-role="2" onclick="setRoleFilter(2)">教师</button>
+                    <button data-role="3" onclick="setRoleFilter(3)">管理员</button>
+                </div>
+                <input type="text" id="keyword" placeholder="账号/姓名/手机号" style="margin-left:auto;max-width:200px;"
+                       onkeydown="if(event.key==='Enter'){loadUsers();}">
+                <button class="btn btn-sm" onclick="loadUsers()">搜索</button>
+                <button class="btn btn-sm btn-success" onclick="openCreate()">+ 新增用户</button>
+            </div>
+            <table class="data-table">
+                <thead><tr>
+                    <th>账号</th><th>角色</th><th>姓名</th><th>学号</th><th>年级</th><th>班级</th><th>专业</th>
+                    <th>手机号</th><th>状态</th><th>操作</th>
+                </tr></thead>
+                <tbody id="users-tbody"></tbody>
+            </table>
+        </div>
     </div>
 
     <!-- 系统配置 -->
@@ -35,16 +84,235 @@
         </div>
     </div>
 </div>
+
+<!-- 新增/编辑弹窗 -->
+<div class="modal-mask" id="modal-mask">
+    <div class="modal">
+        <h3>
+            <span id="modal-title">新增用户</span>
+            <button class="close" onclick="closeModal()">&times;</button>
+        </h3>
+        <div class="modal-grid">
+            <div class="form-item">
+                <label>角色 *</label>
+                <select id="m-role" onchange="toggleStudentFields()">
+                    <option value="1">学生</option>
+                    <option value="2">教师</option>
+                    <option value="3">管理员</option>
+                </select>
+            </div>
+            <div class="form-item">
+                <label>登录账号 *</label>
+                <input type="text" id="m-username" maxlength="50">
+            </div>
+            <div class="form-item">
+                <label>姓名 *</label>
+                <input type="text" id="m-name" maxlength="50">
+            </div>
+            <div class="form-item">
+                <label>密码（留空默认123456）</label>
+                <input type="text" id="m-password" maxlength="50">
+            </div>
+            <div class="form-item">
+                <label>年龄</label>
+                <input type="number" id="m-age" min="1" max="120">
+            </div>
+            <div class="form-item">
+                <label>性别</label>
+                <select id="m-gender">
+                    <option value="">未填写</option>
+                    <option value="男">男</option>
+                    <option value="女">女</option>
+                </select>
+            </div>
+            <div class="form-item full">
+                <label>联系方式（11位手机号）</label>
+                <input type="text" id="m-phone" maxlength="11" style="max-width:260px;">
+            </div>
+            <div class="form-item" id="f-studentNo">
+                <label>学号 *（学生）</label>
+                <input type="text" id="m-studentNo" maxlength="30">
+            </div>
+            <div class="form-item" id="f-grade">
+                <label>年级（学生）</label>
+                <input type="text" id="m-grade" maxlength="20">
+            </div>
+            <div class="form-item" id="f-className">
+                <label>班级 *（学生）</label>
+                <input type="text" id="m-className" maxlength="30">
+            </div>
+            <div class="form-item" id="f-major">
+                <label>专业（学生）</label>
+                <input type="text" id="m-major" maxlength="50">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+            <button class="btn" onclick="saveUser()">保存</button>
+        </div>
+    </div>
+</div>
+
 <div id="toast"></div>
 <script src="/js/common.js"></script>
 <script>
+    const ROLE_TEXT = { 1: '学生', 2: '教师', 3: '管理员' };
+    let currentUser = null;
+    let filterRole = '';
+    let editingId = null;
+
     (async function () {
-        const user = await loadCurrentUser();
-        if (!user) return;
-        if (user.role !== 3) { location.href = roleHome(user.role); return; }
-        renderNavbar(user);
+        currentUser = await loadCurrentUser();
+        if (!currentUser) return;
+        if (currentUser.role !== 3) { location.href = roleHome(currentUser.role); return; }
+        renderNavbar(currentUser);
+        loadUsers();
         loadPeriod();
     })();
+
+    function setRoleFilter(role) {
+        filterRole = role;
+        document.querySelectorAll('#role-filter button').forEach(b =>
+            b.classList.toggle('active', b.dataset.role === String(role)));
+        loadUsers();
+    }
+
+    async function loadUsers() {
+        const kw = document.getElementById('keyword').value.trim();
+        let url = '/api/admin/users?';
+        if (filterRole !== '') url += 'role=' + filterRole + '&';
+        if (kw) url += 'keyword=' + encodeURIComponent(kw);
+        const r = await api(url);
+        const tbody = document.getElementById('users-tbody');
+        if (r.code !== 0) { toast(r.message, 'error'); return; }
+        if (!r.data.length) { tbody.innerHTML = '<tr><td colspan="10">没有符合条件的用户</td></tr>'; return; }
+        tbody.innerHTML = r.data.map(u => {
+            const isSelf = u.id === currentUser.id;
+            const dash = '<span style="color:#c3ccd5;">-</span>';
+            const statusHtml = u.status === 1
+                ? '<span class="status-tag on">正常</span>'
+                : '<span class="status-tag off">禁用</span>';
+            const toggleLabel = u.status === 1 ? '禁用' : '启用';
+            return '<tr>' +
+                '<td>' + esc(u.username) + '</td>' +
+                '<td>' + ROLE_TEXT[u.role] + '</td>' +
+                '<td>' + esc(u.name) + '</td>' +
+                '<td>' + (u.studentNo ? esc(u.studentNo) : dash) + '</td>' +
+                '<td>' + (u.grade ? esc(u.grade) : dash) + '</td>' +
+                '<td>' + (u.className ? esc(u.className) : dash) + '</td>' +
+                '<td>' + (u.major ? esc(u.major) : dash) + '</td>' +
+                '<td>' + (u.phone ? esc(u.phone) : dash) + '</td>' +
+                '<td>' + statusHtml + '</td>' +
+                '<td style="white-space:nowrap;">' +
+                    '<button class="op-link" onclick="openEdit(' + u.id + ')">编辑</button>' +
+                    '<button class="op-link" ' + (isSelf ? 'disabled' : '') +
+                        ' onclick="toggleStatus(' + u.id + ',' + u.status + ')">' + toggleLabel + '</button>' +
+                    '<button class="op-link danger" ' + (isSelf ? 'disabled' : '') +
+                        ' onclick="deleteUser(' + u.id + ')">删除</button>' +
+                '</td></tr>';
+        }).join('');
+    }
+
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
+    function openCreate() {
+        editingId = null;
+        document.getElementById('modal-title').textContent = '新增用户';
+        document.getElementById('m-role').disabled = false;
+        ['m-username','m-name','m-password','m-age','m-phone','m-studentNo','m-grade','m-className','m-major']
+            .forEach(id => document.getElementById(id).value = '');
+        document.getElementById('m-role').value = '1';
+        document.getElementById('m-gender').value = '';
+        toggleStudentFields();
+        document.getElementById('modal-mask').classList.add('show');
+    }
+
+    async function openEdit(id) {
+        editingId = id;
+        document.getElementById('modal-title').textContent = '编辑用户';
+        const r = await api('/api/admin/users?keyword=');
+        if (r.code !== 0) return;
+        const u = r.data.find(x => x.id === id);
+        if (!u) return;
+        document.getElementById('m-role').value = u.role;
+        document.getElementById('m-role').disabled = true;
+        document.getElementById('m-username').value = u.username;
+        document.getElementById('m-name').value = u.name;
+        document.getElementById('m-password').value = '';
+        document.getElementById('m-age').value = u.age || '';
+        document.getElementById('m-gender').value = u.gender || '';
+        document.getElementById('m-phone').value = u.phone || '';
+        document.getElementById('m-studentNo').value = u.studentNo || '';
+        document.getElementById('m-grade').value = u.grade || '';
+        document.getElementById('m-className').value = u.className || '';
+        document.getElementById('m-major').value = u.major || '';
+        toggleStudentFields();
+        document.getElementById('modal-mask').classList.add('show');
+    }
+
+    function toggleStudentFields() {
+        const isStudent = document.getElementById('m-role').value === '1';
+        ['f-studentNo','f-grade','f-className','f-major'].forEach(id =>
+            document.getElementById(id).style.display = isStudent ? '' : 'none');
+    }
+
+    function closeModal() {
+        document.getElementById('modal-mask').classList.remove('show');
+    }
+
+    function collectDTO() {
+        const val = id => document.getElementById(id).value.trim();
+        return {
+            username: val('m-username'),
+            password: val('m-password'),
+            name: val('m-name'),
+            role: Number(document.getElementById('m-role').value),
+            age: val('m-age') ? Number(val('m-age')) : null,
+            gender: document.getElementById('m-gender').value,
+            phone: val('m-phone'),
+            studentNo: val('m-studentNo'),
+            grade: val('m-grade'),
+            className: val('m-className'),
+            major: val('m-major')
+        };
+    }
+
+    async function saveUser() {
+        const dto = collectDTO();
+        let r;
+        if (editingId === null) {
+            r = await api('/api/admin/users', { method: 'POST', body: JSON.stringify(dto) });
+        } else {
+            r = await api('/api/admin/users/' + editingId, { method: 'PUT', body: JSON.stringify(dto) });
+        }
+        if (r.code === 0) {
+            toast(r.message, 'success');
+            closeModal();
+            loadUsers();
+        } else {
+            toast(r.message, 'error');
+        }
+    }
+
+    async function deleteUser(id) {
+        if (!confirm('确定删除该用户吗？其反馈、讨论消息与班级关联将一并清理，此操作不可恢复。')) return;
+        const r = await api('/api/admin/users/' + id, { method: 'DELETE' });
+        if (r.code === 0) { toast(r.message, 'success'); loadUsers(); }
+        else toast(r.message, 'error');
+    }
+
+    async function toggleStatus(id, current) {
+        const next = current === 1 ? 0 : 1;
+        const r = await api('/api/admin/users/' + id + '/status', {
+            method: 'PUT', body: JSON.stringify({ status: next })
+        });
+        if (r.code === 0) { toast(r.message, 'success'); loadUsers(); }
+        else toast(r.message, 'error');
+    }
 
     async function loadPeriod() {
         const r = await api('/api/admin/config/stats-period');
