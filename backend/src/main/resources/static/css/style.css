@@ -193,3 +193,80 @@ table.data-table tr:nth-child(even) td { background: #fafcfe; }
     .discuss-msg { max-width: 88%; }
     .discuss-img { max-width: 180px; }
 }
+
+/* ========== 弹窗（Modal） ========== */
+.modal-mask {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(30, 50, 70, .45);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+}
+.modal-mask.show { display: flex; }
+.modal {
+    background: #fff;
+    border-radius: 10px;
+    width: 460px;
+    max-width: 92vw;
+    max-height: 88vh;
+    padding: 20px 22px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.25);
+    animation: modal-pop .16s ease-out;
+}
+@keyframes modal-pop {
+    from { transform: translateY(-12px) scale(.98); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+.modal h3 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 16px;
+    margin-bottom: 16px;
+    color: #2c3e50;
+}
+.modal .close {
+    border: none;
+    background: none;
+    font-size: 22px;
+    line-height: 1;
+    color: #9aa8b5;
+    cursor: pointer;
+    padding: 0 4px;
+}
+.modal .close:hover { color: #e05b5b; }
+.modal .form-item { margin-bottom: 12px; }
+.modal .form-item label { display: block; font-size: 13px; color: #5a6b7d; margin-bottom: 5px; }
+.modal .form-item input, .modal .form-item textarea {
+    width: 100%;
+    padding: 8px 11px;
+    border: 1px solid #d3dde6;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    font-family: inherit;
+}
+.modal .form-item input:focus, .modal .form-item textarea:focus { border-color: #1e6fb8; }
+.modal-footer { text-align: right; margin-top: 16px; }
+.modal-footer .btn { margin-left: 8px; }
+.student-pick-list {
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid #e3e9ef;
+    border-radius: 6px;
+    padding: 8px 12px;
+}
+.student-pick-list label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 14px;
+    cursor: pointer;
+    border-bottom: 1px dashed #eef2f6;
+}
+.student-pick-list label:last-child { border-bottom: none; }
+.student-pick-list .already { color: #e8821e; font-size: 12px; }
+.student-pick-list .meta { margin-left: auto; font-size: 12px; color: #9aa8b5; }
